@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::path::Path;
+use base64::{Engine as _, engine::general_purpose};
+use tauri::Theme;
 
 #[derive(Deserialize)]
 struct ChatJson {
@@ -95,11 +98,96 @@ fn find_all_plan_md_paths(chat: &ChatJson) -> Vec<FoundPlan> {
     results
 }
 
+fn encode_session_id(session_id: &str) -> String {
+    general_purpose::STANDARD.encode(session_id.as_bytes())
+}
+
+fn find_session_id(json: &serde_json::Value) -> Option<String> {
+    match json {
+        serde_json::Value::Object(map) => {
+            if let Some(serde_json::Value::String(value)) = map.get("sessionId") {
+                return Some(value.clone());
+            }
+            for value in map.values() {
+                if let Some(found) = find_session_id(value) {
+                    return Some(found);
+                }
+            }
+            None
+        }
+        serde_json::Value::Array(values) => {
+            for value in values {
+                if let Some(found) = find_session_id(value) {
+                    return Some(found);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+fn find_plan_md_via_session_id(session_id: &str) -> Option<FoundPlan> {
+    let encoded_session_id = encode_session_id(session_id);
+
+    let appdata = std::env::var("APPDATA").ok()?;
+    let workspace_storage = Path::new(&appdata).join("Code").join("User").join("workspaceStorage");
+    if !workspace_storage.exists() {
+        return None;
+    }
+
+    let entries = fs::read_dir(&workspace_storage).ok()?;
+    for entry in entries {
+        let entry = entry.ok()?;
+        let ws_path = entry.path();
+        let memory_folder = ws_path
+            .join("GitHub.copilot-chat")
+            .join("memory-tool")
+            .join("memories")
+            .join(&encoded_session_id);
+
+        if memory_folder.exists() && memory_folder.is_dir() {
+            let plan_path = memory_folder.join("plan.md");
+            if plan_path.exists() {
+                let os_path = plan_path.to_string_lossy().to_string();
+                let vs_path = format!("/C:/{}", os_path.replace("\\", "/").replace("C:/", ""));
+                let content = fs::read_to_string(&plan_path).ok();
+                return Some(FoundPlan {
+                    request_id: format!("session:{session_id}"),
+                    vs_path,
+                    os_path,
+                    content,
+                    error: None,
+                });
+            }
+        }
+    }
+
+    None
+}
+
+#[tauri::command]
+fn set_window_theme(window: tauri::Window, theme: Option<String>) -> Result<(), String> {
+    let t = match theme.as_deref() {
+        Some("dark") => Some(Theme::Dark),
+        Some("light") => Some(Theme::Light),
+        _ => None,
+    };
+    window.set_theme(t).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn extract_plans(json: String) -> Result<Vec<FoundPlan>, String> {
-    let chat: ChatJson =
-        serde_json::from_str(&json).map_err(|e| format!("Ungültiges JSON: {e}"))?;
-    let plans = find_all_plan_md_paths(&chat);
+    let json_value: serde_json::Value = serde_json::from_str(&json).map_err(|e| format!("Ungültiges JSON: {e}"))?;
+    let chat: ChatJson = serde_json::from_value(json_value.clone()).map_err(|e| format!("Ungültiges JSON: {e}"))?;
+    let mut plans = find_all_plan_md_paths(&chat);
+    if plans.is_empty() {
+        if let Some(session_id) = find_session_id(&json_value) {
+            if let Some(plan) = find_plan_md_via_session_id(&session_id) {
+                plans.push(plan);
+            }
+        }
+    }
     if plans.is_empty() {
         return Err("Keine plan.md-Referenzen gefunden".to_string());
     }
@@ -109,9 +197,16 @@ fn extract_plans(json: String) -> Result<Vec<FoundPlan>, String> {
 #[tauri::command]
 fn extract_plans_from_path(path: String) -> Result<Vec<FoundPlan>, String> {
     let json = fs::read_to_string(&path).map_err(|e| format!("Datei konnte nicht gelesen werden: {e}"))?;
-    let chat: ChatJson =
-        serde_json::from_str(&json).map_err(|e| format!("Ungültiges JSON: {e}"))?;
-    let plans = find_all_plan_md_paths(&chat);
+    let json_value: serde_json::Value = serde_json::from_str(&json).map_err(|e| format!("Ungültiges JSON: {e}"))?;
+    let chat: ChatJson = serde_json::from_value(json_value.clone()).map_err(|e| format!("Ungültiges JSON: {e}"))?;
+    let mut plans = find_all_plan_md_paths(&chat);
+    if plans.is_empty() {
+        if let Some(session_id) = find_session_id(&json_value) {
+            if let Some(plan) = find_plan_md_via_session_id(&session_id) {
+                plans.push(plan);
+            }
+        }
+    }
     if plans.is_empty() {
         return Err("Keine plan.md-Referenzen gefunden".to_string());
     }
@@ -124,7 +219,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![extract_plans, extract_plans_from_path])
+        .invoke_handler(tauri::generate_handler![set_window_theme, extract_plans, extract_plans_from_path])
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten der Tauri-App");
 }

@@ -489,6 +489,7 @@ dependencies = [
 name = "copilot-plan-exporter"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "regex-lite",
  "serde",
  "serde_json",

@@ -130,6 +130,10 @@
     background: oklch(0.11 0 0);
   }
 
+  :root:not(.dark) .bg-app {
+    background: oklch(0.96 0.005 70);
+  }
+
   /* Generic frosted glass surface */
   .glass {
     background: linear-gradient(
@@ -306,13 +310,102 @@
   }
 }
 
-/* Sonner toast overrides — neutral dark + green accent */
-[data-sonner-toast] {
+/* ── Light mode overrides for glass system ───────────────────── */
+:root:not(.dark) .glass {
+  background: oklch(1 0 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: oklch(0 0 0 / 0.09);
+  box-shadow: 0 1px 4px oklch(0 0 0 / 0.06), 0 0 0 1px oklch(0 0 0 / 0.04);
+}
+
+:root:not(.dark) .glass-card {
+  background: oklch(1 0 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: oklch(0 0 0 / 0.08);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.07), 0 4px 16px oklch(0 0 0 / 0.04);
+}
+
+:root:not(.dark) .glass-card:hover {
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.09), 0 0 0 1px oklch(0.72 0.18 145 / 0.2);
+}
+
+:root:not(.dark) .glass-btn {
+  background: oklch(0.97 0 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: oklch(0 0 0 / 0.12);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
+}
+
+:root:not(.dark) .glass-btn:hover {
+  background: oklch(1 0 0);
+  border-color: oklch(0 0 0 / 0.18);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.08);
+}
+
+:root:not(.dark) .glass-drop-zone {
+  background: oklch(1 0 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: oklch(0 0 0 / 0.15);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
+}
+
+:root:not(.dark) .glass-drop-zone:hover {
+  border-color: oklch(0.72 0.18 145 / 0.5);
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.06), 0 0 0 1px oklch(0.72 0.18 145 / 0.15);
+}
+
+:root:not(.dark) .glass-drop-zone.dragging {
+  border-color: oklch(0.72 0.18 145 / 0.65);
+  box-shadow: 0 2px 12px oklch(0.65 0.16 145 / 0.15), 0 0 0 1px oklch(0.72 0.18 145 / 0.25);
+  background: oklch(0.72 0.18 145 / 0.03);
+}
+
+:root:not(.dark) .glass-header {
+  background: oklch(0.985 0 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: oklch(0 0 0 / 0.07);
+  box-shadow: none;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: oklch(1 0 0 / 0.15);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 0.25);
+  background-clip: padding-box;
+}
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+  background: oklch(0 0 0 / 0.18);
+  background-clip: padding-box;
+}
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0 0 0 / 0.30);
+  background-clip: padding-box;
+}
+
+/* Sonner toast overrides — dark */
+.dark [data-sonner-toast] {
   background: oklch(0.17 0 0 / 0.95) !important;
   border: 1px solid oklch(0.72 0.18 145 / 0.25) !important;
   color: oklch(0.96 0 0) !important;
 }
 [data-sonner-toast] [data-icon] svg,
 [data-sonner-toast][data-type="success"] [data-icon] svg {
-  color: oklch(0.72 0.18 145) !important;
+  color: oklch(0.52 0.18 145) !important;
 }
