@@ -1,4 +1,4 @@
-# Copilot Plan Extractor
+# Copilot Plan Exporter
 
 <p align="center">
   <img src="src-tauri/icons/128x128@2x.png" width="96" alt="App Icon" />
